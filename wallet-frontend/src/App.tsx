@@ -1,81 +1,69 @@
 import React, { useState } from 'react';
-import albedo from '@albedo-link/intent';
 import './App.css';
+import albedo from '@albedo-link/intent';
+import WalletCard from './components/WalletCard';
+import ProfileCard from './components/ProfileCard';
+import ActionsCard from './components/ActionsCard';
+import StreakCard from './components/StreakCard';
 
 function App() {
-  const [isConnected, setIsConnected] = useState(false);
   const [publicKey, setPublicKey] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [balance, setBalance] = useState('1,234.56'); // Örnek bakiye
 
-  const connectWallet = async () => {
+  const handleConnect = async () => {
     setError('');
-    setLoading(true);
     try {
       const result = await albedo.publicKey({});
-      
-      if (result.pubkey) {
-        setPublicKey(result.pubkey);
-        setIsConnected(true);
-      } else {
-        throw new Error('Public key alınamadı.');
-      }
+      setPublicKey(result.pubkey);
     } catch (e: any) {
-      if (e.message.includes('User rejected')) {
-        setError('Bağlantı isteği reddedildi.');
+      console.error(e);
+      if (e.message.includes('cancelled')) {
+        setError('Cüzdan bağlantısı kullanıcı tarafından iptal edildi.');
       } else {
-        setError('Cüzdan bağlanamadı.');
+        setError('Cüzdan bağlanamadı. Lütfen tekrar deneyin.');
       }
-    } finally {
-      setLoading(false);
     }
   };
 
-  const disconnectWallet = () => {
-    setIsConnected(false);
-    setPublicKey('');
-  };
+  if (error) {
+    return (
+        <div className="connect-wallet-container">
+            <div className="connect-wallet-box">
+                <h1>Bir Sorun Oluştu</h1>
+                <p>{error}</p>
+                <button onClick={() => setError('')} className="connect-wallet-button">
+                    Tekrar Dene
+                </button>
+            </div>
+        </div>
+    );
+  }
+
+  if (!publicKey) {
+    return (
+      <div className="connect-wallet-container">
+          <div className="connect-wallet-box">
+              <h1>Cüzdanınızı Bağlayın</h1>
+              <p>Başlamak için lütfen Albedo cüzdanınızı bağlayın.</p>
+              <button onClick={handleConnect} className="connect-wallet-button">
+                  Albedo ile Bağlan
+              </button>
+          </div>
+      </div>
+    );
+  }
 
   return (
     <div className="App">
-      <div className="wallet-container">
-        {!isConnected ? (
-          <>
-            <h1>Stellar Cüzdan</h1>
-            {error && <p className="error-message">{error}</p>}
-            <button
-              onClick={connectWallet}
-              disabled={loading}
-              className="action-button connect-button"
-            >
-              {loading ? 'Bağlanıyor...' : 'Cüzdanı Bağla'}
-            </button>
-          </>
-        ) : (
-          <div className="wallet-card">
-            <div className="card-header">
-              <h3>Hesabım</h3>
-              <button onClick={disconnectWallet} className="disconnect-button-icon" title="Bağlantıyı Kes">
-                &#x2715; 
-              </button>
-            </div>
-
-            <div className="balance-section">
-              <p className="balance-label">Toplam Bakiye</p>
-              <p className="balance-amount">
-                <span>$</span>{balance}
-              </p>
-            </div>
-
-            <div className="wallet-actions">
-              <button className="action-button action-button-secondary">
-                Para Yatır
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      <main className="dashboard">
+        <header className="dashboard-header">
+          <h1>Kontrol Paneli</h1>
+        </header>
+        <WalletCard />
+        <ProfileCard />
+        <ActionsCard />
+        <StreakCard />
+      </main>
     </div>
   );
 }
