@@ -1,0 +1,31 @@
+{
+  "name": "baby-wallet-backend",
+  "version": "1.0.0",
+  "description": "Baby Wallet - Secure Blockchain Savings for Your Child's Future",
+  "main": "manage.py",
+  "scripts": {
+    "start": "python manage.py runserver",
+    "dev": "python manage.py runserver 0.0.0.0:8000",
+    "migrate": "python manage.py migrate",
+    "makemigrations": "python manage.py makemigrations",
+    "collectstatic": "python manage.py collectstatic --noinput",
+    "createsuperuser": "python manage.py createsuperuser",
+    "test": "python manage.py test",
+    "shell": "python manage.py shell"
+  },
+  "keywords": [
+    "django",
+    "blockchain",
+    "wallet",
+    "savings",
+    "children",
+    "investment"
+  ],
+  "author": "Baby Wallet Team",
+  "license": "MIT",
+  "dependencies": {
+    "django": "^5.1.4",
+    "djangorestframework": "^3.14.0",
+    "django-cors-headers": "^4.3.1"
+  }
+} 

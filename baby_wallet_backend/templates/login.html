@@ -1,0 +1,543 @@
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Baby Wallet - Sign In</title>
+	<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+	<script src="https://cdn.tailwindcss.com"></script>
+	<script>
+		tailwind.config = {
+			theme: {
+				extend: {
+					colors: {
+						babyBlue: '#B8D8F8',
+						mintGreen: '#C3E8D7',
+						coralPink: '#FFD6CC',
+						darkBlue: '#5B8AB8',
+						darkGreen: '#6BAA8B',
+						darkCoral: '#E8A798',
+						textDark: '#3A4F66',
+						textLight: '#F8FAFC',
+					},
+					fontFamily: {
+						nunito: ['Nunito', 'sans-serif'],
+					},
+					boxShadow: {
+						'input': '0 0 0 3px rgba(184, 216, 248, 0.3)',
+						'input-dark': '0 0 0 3px rgba(91, 138, 184, 0.3)',
+					}
+				}
+			}
+		}
+	</script>
+	<style>
+		body {
+			font-family: 'Nunito', sans-serif;
+			transition: background-color 0.3s, color 0.3s;
+		}
+
+		/* Light theme (default) */
+		body.light {
+			--bg-primary: #f8fafc;
+			--bg-secondary: #f1f5f9;
+			--text-primary: #1e293b;
+			--text-secondary: #475569;
+			--accent-primary: #8b5cf6;
+			--accent-secondary: #7c3aed;
+			--card-bg: #ffffff;
+			--border-color: #e2e8f0;
+			background-color: var(--bg-primary);
+			color: var(--text-primary);
+		}
+
+		/* Dark theme */
+		body.dark {
+			--bg-primary: #121826;
+			--bg-secondary: #1e293b;
+			--text-primary: #f8fafc;
+			--text-secondary: #cbd5e1;
+			--accent-primary: #8b5cf6;
+			--accent-secondary: #7c3aed;
+			--card-bg: #1e293b;
+			--border-color: #334155;
+			background-color: var(--bg-primary);
+			color: var(--text-primary);
+		}
+
+		.theme-transition {
+			transition: all 0.3s ease;
+		}
+
+		.btn-transition {
+			transition: all 0.3s ease;
+		}
+
+		.btn-transition:hover {
+			transform: translateY(-2px);
+		}
+
+		.btn-transition:active {
+			transform: translateY(0);
+		}
+
+		.theme-toggle {
+			transition: all 0.3s ease;
+		}
+
+		.theme-toggle:hover {
+			transform: rotate(45deg);
+		}
+
+		.input-focus-effect:focus {
+			box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
+			border-color: var(--accent-primary);
+		}
+
+		.illustration-container {
+			background: transparent;
+		}
+
+		/* Utility classes using CSS variables */
+		.bg-primary { background-color: var(--bg-primary); }
+		.bg-secondary { background-color: var(--bg-secondary); }
+		.bg-card-bg { background-color: var(--card-bg); }
+		.text-primary { color: var(--text-primary); }
+		.text-secondary { color: var(--text-secondary); }
+		.text-accent-primary { color: var(--accent-primary); }
+		.bg-accent-primary { background-color: var(--accent-primary); }
+		.border-border-color { border-color: var(--border-color); }
+		.hover\:bg-secondary:hover { background-color: var(--bg-secondary); }
+		
+		/* Input specific styling */
+		.input-field {
+			background-color: var(--bg-secondary);
+			color: var(--text-primary);
+			border-color: var(--border-color);
+		}
+		
+		.input-field::placeholder {
+			color: var(--text-secondary);
+			opacity: 0.7;
+		}
+	</style>
+</head>
+
+<body class="light bg-primary text-primary min-h-screen transition-colors duration-300">
+	<div class="absolute top-6 right-6">
+		<button id="themeToggle" class="theme-toggle p-2 rounded-full bg-card-bg hover:bg-secondary shadow-md theme-transition">
+			<!-- Sun icon (light mode) -->
+			<svg id="lightIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-accent-primary" fill="none"
+				viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+					d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z">
+				</path>
+			</svg>
+			<!-- Moon icon (dark mode) -->
+			<svg id="darkIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-accent-primary hidden" fill="none"
+				viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+					d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+			</svg>
+		</button>
+	</div>
+
+	<div
+		class="container mx-auto px-4 py-8 md:py-16 flex flex-col md:flex-row items-center justify-center min-h-screen">
+		<!-- Left side illustration (hidden on mobile) -->
+		<div
+			class="hidden md:block w-full md:w-1/2 lg:w-5/12 mb-8 md:mb-0 illustration-container rounded-[24px] shadow-xl overflow-hidden p-6 md:p-10 flex items-center justify-center theme-transition">
+			<div class="illustration">
+				<svg width="100%" height="100%" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+					<!-- Background circles for depth -->
+					<circle cx="200" cy="150" r="120" fill="var(--accent-primary)" opacity="0.1"></circle>
+					<circle cx="180" cy="130" r="80" fill="var(--accent-secondary)" opacity="0.15"></circle>
+					
+					<!-- Cute piggy bank -->
+					<ellipse cx="200" cy="180" rx="60" ry="45" fill="var(--accent-primary)" opacity="0.8"></ellipse>
+					<!-- Piggy bank snout -->
+					<ellipse cx="160" cy="175" rx="15" ry="10" fill="var(--accent-primary)" opacity="0.9"></ellipse>
+					<!-- Piggy bank eye -->
+					<circle cx="185" cy="165" r="6" fill="#FFFFFF"></circle>
+					<!-- Piggy bank ear -->
+					<ellipse cx="195" cy="145" rx="8" ry="12" fill="var(--accent-primary)" opacity="0.9"></ellipse>
+					<!-- Piggy bank legs -->
+					<rect x="170" y="210" width="12" height="15" rx="6" fill="var(--accent-primary)" opacity="0.9"></rect>
+					<rect x="190" y="210" width="12" height="15" rx="6" fill="var(--accent-primary)" opacity="0.9"></rect>
+					<rect x="210" y="210" width="12" height="15" rx="6" fill="var(--accent-primary)" opacity="0.9"></rect>
+					<rect x="230" y="210" width="12" height="15" rx="6" fill="var(--accent-primary)" opacity="0.9"></rect>
+					
+					<!-- Coin slot on piggy bank -->
+					<rect x="195" y="155" width="20" height="4" rx="2" fill="#FFFFFF"></rect>
+					
+					<!-- Floating coins -->
+					<circle cx="120" cy="100" r="12" fill="#FFD700" stroke="var(--accent-primary)" stroke-width="2" opacity="0.9">
+						<animate attributeName="cy" values="100;95;100" dur="2s" repeatCount="indefinite"/>
+					</circle>
+					<circle cx="280" cy="120" r="10" fill="#FFD700" stroke="var(--accent-primary)" stroke-width="2" opacity="0.8">
+						<animate attributeName="cy" values="120;115;120" dur="2.5s" repeatCount="indefinite"/>
+					</circle>
+					<circle cx="150" cy="80" r="8" fill="#FFD700" stroke="var(--accent-primary)" stroke-width="2" opacity="0.7">
+						<animate attributeName="cy" values="80;75;80" dur="3s" repeatCount="indefinite"/>
+					</circle>
+					
+					<!-- Dollar signs on coins -->
+					<text x="116" y="106" font-family="Arial" font-size="14" font-weight="bold" fill="var(--accent-primary)">$</text>
+					<text x="277" y="125" font-family="Arial" font-size="12" font-weight="bold" fill="var(--accent-primary)">$</text>
+					<text x="148" y="85" font-family="Arial" font-size="10" font-weight="bold" fill="var(--accent-primary)">$</text>
+					
+					<!-- Baby figure (simplified and cute) -->
+					<circle cx="100" cy="120" r="20" fill="var(--accent-secondary)" opacity="0.8"></circle>
+					<!-- Baby body -->
+					<ellipse cx="100" cy="160" rx="18" ry="25" fill="var(--accent-secondary)" opacity="0.8"></ellipse>
+					<!-- Baby arms -->
+					<circle cx="85" cy="150" r="8" fill="var(--accent-secondary)" opacity="0.8"></circle>
+					<circle cx="115" cy="150" r="8" fill="var(--accent-secondary)" opacity="0.8"></circle>
+					<!-- Baby legs -->
+					<circle cx="90" cy="185" r="8" fill="var(--accent-secondary)" opacity="0.8"></circle>
+					<circle cx="110" cy="185" r="8" fill="var(--accent-secondary)" opacity="0.8"></circle>
+					<!-- Baby face -->
+					<circle cx="95" cy="115" r="2" fill="#FFFFFF"></circle>
+					<circle cx="105" cy="115" r="2" fill="#FFFFFF"></circle>
+					<path d="M 95 125 Q 100 130 105 125" stroke="#FFFFFF" stroke-width="1.5" fill="none"></path>
+					
+					<!-- Parent figure (simplified) -->
+					<circle cx="300" cy="110" r="25" fill="var(--accent-primary)" opacity="0.8"></circle>
+					<!-- Parent body -->
+					<ellipse cx="300" cy="160" rx="22" ry="35" fill="var(--accent-primary)" opacity="0.8"></ellipse>
+					<!-- Parent arms -->
+					<ellipse cx="275" cy="145" rx="10" ry="15" fill="var(--accent-primary)" opacity="0.8"></ellipse>
+					<ellipse cx="325" cy="145" rx="10" ry="15" fill="var(--accent-primary)" opacity="0.8"></ellipse>
+					<!-- Parent legs -->
+					<rect x="285" y="190" width="12" height="25" rx="6" fill="var(--accent-primary)" opacity="0.8"></rect>
+					<rect x="303" y="190" width="12" height="25" rx="6" fill="var(--accent-primary)" opacity="0.8"></rect>
+					<!-- Parent face -->
+					<circle cx="293" cy="105" r="2" fill="#FFFFFF"></circle>
+					<circle cx="307" cy="105" r="2" fill="#FFFFFF"></circle>
+					<path d="M 293 115 Q 300 120 307 115" stroke="#FFFFFF" stroke-width="1.5" fill="none"></path>
+					
+					<!-- Hearts floating around -->
+					<path d="M 150 50 C 145 45, 135 45, 135 55 C 135 45, 125 45, 120 50 C 120 60, 135 70, 135 70 C 135 70, 150 60, 150 50 Z" fill="var(--accent-secondary)" opacity="0.6">
+						<animate attributeName="opacity" values="0.6;0.3;0.6" dur="2s" repeatCount="indefinite"/>
+					</path>
+					<path d="M 280 60 C 277 57, 270 57, 270 63 C 270 57, 263 57, 260 60 C 260 67, 270 75, 270 75 C 270 75, 280 67, 280 60 Z" fill="var(--accent-secondary)" opacity="0.5">
+						<animate attributeName="opacity" values="0.5;0.2;0.5" dur="2.5s" repeatCount="indefinite"/>
+					</path>
+					
+					<!-- Decorative stars -->
+					<path d="M 80 60 L 82 66 L 88 66 L 83 70 L 85 76 L 80 72 L 75 76 L 77 70 L 72 66 L 78 66 Z" fill="var(--accent-secondary)" opacity="0.4"></path>
+					<path d="M 320 80 L 321 84 L 325 84 L 322 86 L 323 90 L 320 88 L 317 90 L 318 86 L 315 84 L 319 84 Z" fill="var(--accent-secondary)" opacity="0.4"></path>
+				</svg>
+			</div>
+		</div>
+
+		<!-- Right side login form -->
+		<div class="w-full md:w-1/2 lg:w-5/12 md:pl-12">
+			<div class="bg-card-bg rounded-[24px] shadow-xl p-8 md:p-10 theme-transition">
+				<div class="text-center mb-8">
+					<h1 class="text-3xl md:text-4xl font-bold text-primary mb-3">Sign in to Baby
+						Wallet</h1>
+					<p class="text-secondary">Secure your child's financial future</p>
+				</div>
+
+				<form class="space-y-5">
+					<div>
+						<label for="username"
+							class="block text-sm font-medium text-secondary mb-1">Username or
+							Email</label>
+						<div class="relative">
+							<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-secondary" fill="none"
+									viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+										d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+								</svg>
+							</div>
+							<input id="username" name="username" type="text" autocomplete="username" required=""
+								class="input-focus-effect input-field block w-full pl-10 pr-3 py-3 rounded-2xl shadow-sm focus:outline-none transition-all duration-200"
+								placeholder="Enter your username or email">
+						</div>
+					</div>
+
+					<div>
+						<label for="password"
+							class="block text-sm font-medium text-secondary mb-1">Password</label>
+						<div class="relative">
+							<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+								<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-secondary" fill="none"
+									viewBox="0 0 24 24" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+										d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+									</path>
+								</svg>
+							</div>
+							<input id="password" name="password" type="password" autocomplete="current-password"
+								required=""
+								class="input-focus-effect input-field block w-full pl-10 pr-10 py-3 rounded-2xl shadow-sm focus:outline-none transition-all duration-200"
+								placeholder="Enter your password">
+							<div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+								<button type="button" id="togglePassword"
+									class="text-secondary hover:text-accent-primary focus:outline-none">
+									<svg id="showPasswordIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+										fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+											d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+											d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+										</path>
+									</svg>
+									<svg id="hidePasswordIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden"
+										fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+											d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21">
+										</path>
+									</svg>
+								</button>
+							</div>
+						</div>
+					</div>
+
+					<div>
+						<button type="submit"
+							class="btn-transition w-full bg-accent-primary hover:bg-accent-secondary text-white font-semibold py-3 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all duration-200">
+							Sign In
+						</button>
+					</div>
+
+					<div class="relative flex items-center py-2">
+						<div class="flex-grow border-t border-border-color"></div>
+						<span class="flex-shrink mx-4 text-secondary text-sm">or</span>
+						<div class="flex-grow border-t border-border-color"></div>
+					</div>
+
+					<div>
+						<button type="button"
+							class="btn-transition w-full bg-card-bg border border-border-color text-primary font-semibold py-3 px-6 rounded-2xl shadow-md hover:shadow-lg hover:bg-secondary transition-all duration-200 flex items-center justify-center space-x-3">
+							<svg class="w-6 h-6" viewBox="0 0 318 318" xmlns="http://www.w3.org/2000/svg">
+								<path d="M274.1,35.5l-99.5,73.9L193,65.8L274.1,35.5z" fill="#E2761B" stroke="#E2761B"
+									stroke-width="5.89" stroke-linecap="round" stroke-linejoin="round"></path>
+								<path d="M44.4,35.5l98.7,74.6l-17.5-44.3L44.4,35.5z" fill="#E4761B" stroke="#E4761B"
+									stroke-width="5.89" stroke-linecap="round" stroke-linejoin="round"></path>
+								<path d="M238.3,206.8l-21.9,33.4l46.9,12.9l13.4-45.6L238.3,206.8z" fill="#E4761B"
+									stroke="#E4761B" stroke-width="5.89" stroke-linecap="round" stroke-linejoin="round">
+								</path>
+								<path d="M41.4,207.5l13.4,45.6l46.9-12.9l-21.9-33.4L41.4,207.5z" fill="#E4761B"
+									stroke="#E4761B" stroke-width="5.89" stroke-linecap="round" stroke-linejoin="round">
+								</path>
+							</svg>
+							<span>Connect with Wallet</span>
+						</button>
+					</div>
+
+					<div>
+						<button type="button"
+							class="btn-transition w-full bg-secondary text-accent-primary font-medium py-2 px-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center space-x-2">
+							<span>Sign in with Passkey</span>
+							<span class="text-lg">🔑</span>
+						</button>
+					</div>
+
+					<div class="flex flex-col sm:flex-row justify-between items-center text-sm pt-2">
+						<a href="#" class="text-accent-primary hover:underline mb-2 sm:mb-0">Forgot your
+							password?</a>
+						<a href="#" class="text-accent-primary hover:underline">Create an account</a>
+					</div>
+				</form>
+			</div>
+
+			<!-- Mobile illustration (shown only on mobile) -->
+			<div
+				class="md:hidden w-full mt-8 illustration-container rounded-[24px] shadow-xl overflow-hidden p-6 flex items-center justify-center theme-transition">
+				<div class="illustration">
+					<svg width="100%" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+						<!-- Background circle -->
+						<circle cx="150" cy="100" r="80" fill="var(--accent-primary)" opacity="0.1"></circle>
+						
+						<!-- Cute piggy bank (centered) -->
+						<ellipse cx="150" cy="120" rx="45" ry="35" fill="var(--accent-primary)" opacity="0.8"></ellipse>
+						<!-- Piggy bank snout -->
+						<ellipse cx="120" cy="115" rx="12" ry="8" fill="var(--accent-primary)" opacity="0.9"></ellipse>
+						<!-- Piggy bank eye -->
+						<circle cx="140" cy="110" r="4" fill="#FFFFFF"></circle>
+						<!-- Piggy bank ear -->
+						<ellipse cx="145" cy="95" rx="6" ry="10" fill="var(--accent-primary)" opacity="0.9"></ellipse>
+						<!-- Coin slot -->
+						<rect x="145" y="105" width="15" height="3" rx="1.5" fill="#FFFFFF"></rect>
+						<!-- Piggy bank legs -->
+						<rect x="130" y="145" width="8" height="12" rx="4" fill="var(--accent-primary)" opacity="0.9"></rect>
+						<rect x="145" y="145" width="8" height="12" rx="4" fill="var(--accent-primary)" opacity="0.9"></rect>
+						<rect x="160" y="145" width="8" height="12" rx="4" fill="var(--accent-primary)" opacity="0.9"></rect>
+						
+						<!-- Baby figure (left side) -->
+						<circle cx="80" cy="90" r="15" fill="var(--accent-secondary)" opacity="0.8"></circle>
+						<ellipse cx="80" cy="120" rx="12" ry="18" fill="var(--accent-secondary)" opacity="0.8"></ellipse>
+						<!-- Baby face -->
+						<circle cx="76" cy="87" r="1.5" fill="#FFFFFF"></circle>
+						<circle cx="84" cy="87" r="1.5" fill="#FFFFFF"></circle>
+						<path d="M 76 93 Q 80 96 84 93" stroke="#FFFFFF" stroke-width="1" fill="none"></path>
+						
+						<!-- Parent figure (right side) -->
+						<circle cx="220" cy="85" r="18" fill="var(--accent-primary)" opacity="0.8"></circle>
+						<ellipse cx="220" cy="120" rx="15" ry="25" fill="var(--accent-primary)" opacity="0.8"></ellipse>
+						<!-- Parent face -->
+						<circle cx="216" cy="82" r="1.5" fill="#FFFFFF"></circle>
+						<circle cx="224" cy="82" r="1.5" fill="#FFFFFF"></circle>
+						<path d="M 216 88 Q 220 91 224 88" stroke="#FFFFFF" stroke-width="1" fill="none"></path>
+						
+						<!-- Floating coins -->
+						<circle cx="100" cy="60" r="8" fill="#FFD700" stroke="var(--accent-primary)" stroke-width="1.5" opacity="0.9">
+							<animate attributeName="cy" values="60;55;60" dur="2s" repeatCount="indefinite"/>
+						</circle>
+						<circle cx="200" cy="50" r="6" fill="#FFD700" stroke="var(--accent-primary)" stroke-width="1.5" opacity="0.8">
+							<animate attributeName="cy" values="50;45;50" dur="2.5s" repeatCount="indefinite"/>
+						</circle>
+						
+						<!-- Dollar signs -->
+						<text x="97" y="65" font-family="Arial" font-size="10" font-weight="bold" fill="var(--accent-primary)">$</text>
+						<text x="198" y="54" font-family="Arial" font-size="8" font-weight="bold" fill="var(--accent-primary)">$</text>
+						
+						<!-- Hearts -->
+						<path d="M 120 40 C 117 37, 112 37, 112 42 C 112 37, 107 37, 104 40 C 104 46, 112 52, 112 52 C 112 52, 120 46, 120 40 Z" fill="var(--accent-secondary)" opacity="0.5">
+							<animate attributeName="opacity" values="0.5;0.2;0.5" dur="2s" repeatCount="indefinite"/>
+						</path>
+						
+						<!-- Stars -->
+						<path d="M 60 40 L 61 44 L 65 44 L 62 46 L 63 50 L 60 48 L 57 50 L 58 46 L 55 44 L 59 44 Z" fill="var(--accent-secondary)" opacity="0.4"></path>
+						<path d="M 240 40 L 241 43 L 244 43 L 242 45 L 243 48 L 240 46 L 237 48 L 238 45 L 236 43 L 239 43 Z" fill="var(--accent-secondary)" opacity="0.4"></path>
+					</svg>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// Theme toggle functionality
+		const themeToggle = document.getElementById('themeToggle');
+		const lightIcon = document.getElementById('lightIcon');
+		const darkIcon = document.getElementById('darkIcon');
+		const body = document.body;
+
+		// Check for saved theme preference or use preferred color scheme
+		const savedTheme = localStorage.getItem('theme');
+		const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+		// Initialize theme
+		if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+			body.classList.add('dark');
+			body.classList.remove('light');
+			if (lightIcon) lightIcon.classList.add('hidden');
+			if (darkIcon) darkIcon.classList.remove('hidden');
+		} else {
+			body.classList.add('light');
+			body.classList.remove('dark');
+			if (lightIcon) lightIcon.classList.remove('hidden');
+			if (darkIcon) darkIcon.classList.add('hidden');
+		}
+
+		themeToggle.addEventListener('click', () => {
+			if (body.classList.contains('light')) {
+				// Switch to dark theme
+				body.classList.remove('light');
+				body.classList.add('dark');
+				if (lightIcon) lightIcon.classList.add('hidden');
+				if (darkIcon) darkIcon.classList.remove('hidden');
+				localStorage.setItem('theme', 'dark');
+			} else {
+				// Switch to light theme
+				body.classList.remove('dark');
+				body.classList.add('light');
+				if (lightIcon) lightIcon.classList.remove('hidden');
+				if (darkIcon) darkIcon.classList.add('hidden');
+				localStorage.setItem('theme', 'light');
+			}
+		});
+
+		// Password visibility toggle
+		const togglePassword = document.getElementById('togglePassword');
+		const passwordInput = document.getElementById('password');
+		const showPasswordIcon = document.getElementById('showPasswordIcon');
+		const hidePasswordIcon = document.getElementById('hidePasswordIcon');
+
+		togglePassword.addEventListener('click', () => {
+			const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+			passwordInput.setAttribute('type', type);
+
+			// Toggle visibility icons
+			showPasswordIcon.classList.toggle('hidden');
+			hidePasswordIcon.classList.toggle('hidden');
+		});
+
+		// Remember last login method (simulated)
+		const savedLoginMethod = localStorage.getItem('loginMethod');
+		if (savedLoginMethod) {
+			// Could highlight the appropriate login method based on saved preference
+			console.log('Last login method:', savedLoginMethod);
+		}
+
+		// Form submission (prevent default for demo)
+		document.querySelector('form').addEventListener('submit', async (e) => {
+			e.preventDefault();
+
+			// Get form data
+			const username = document.getElementById('username').value;
+			const password = document.getElementById('password').value;
+
+			// Validate inputs
+			if (!username || !password) {
+				alert('Please enter both username and password');
+				return;
+			}
+
+			// Simulate loading state
+			const submitButton = e.target.querySelector('button[type="submit"]');
+			const originalText = submitButton.innerText;
+
+			submitButton.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Signing in...
+            `;
+
+			try {
+				// Call the login API
+				const response = await fetch('/api/login/', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ username, password })
+				});
+
+				if (response.ok) {
+					const data = await response.json();
+					// Store the token
+					localStorage.setItem('authToken', data.token);
+					// Save login method preference
+					localStorage.setItem('loginMethod', 'traditional');
+					// Redirect to main page
+					window.location.href = '/';
+				} else {
+					const errorData = await response.json();
+					alert(errorData.error || 'Login failed. Please check your credentials.');
+				}
+			} catch (error) {
+				console.error('Login error:', error);
+				alert('Network error. Please try again.');
+			} finally {
+				// Reset button
+				submitButton.innerText = originalText;
+			}
+		});
+	</script>
+	<script>(function () { function c() { var b = a.contentDocument || a.contentWindow.document; if (b) { var d = b.createElement('script'); d.innerHTML = "window.__CF$cv$params={r:'9534ad24979a68bb',t:'MTc1MDUyMTE4MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);"; b.getElementsByTagName('head')[0].appendChild(d) } } if (document.body) { var a = document.createElement('iframe'); a.height = 1; a.width = 1; a.style.position = 'absolute'; a.style.top = 0; a.style.left = 0; a.style.border = 'none'; a.style.visibility = 'hidden'; document.body.appendChild(a); if ('loading' !== document.readyState) c(); else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c); else { var e = document.onreadystatechange || function () { }; document.onreadystatechange = function (b) { e(b); 'loading' !== document.readyState && (document.onreadystatechange = e, c()) } } } })();</script>
+	<iframe height="1" width="1"
+		style="position: absolute; top: 0px; left: 0px; border: none; visibility: hidden;"></iframe>
+
+	<div
+		style="z-index: 2147483647 !important; padding: 0px !important; margin: 0px !important; border-radius: 8px !important; position: fixed !important; color-scheme: normal !important; box-shadow: rgba(0, 0, 0, 0.15) 0px 2px 4px 0px, rgba(0, 0, 0, 0.18) 0px 8px 15px 6px !important; border: 1px solid rgba(0, 0, 0, 0.2) !important; overflow: hidden !important; backdrop-filter: blur(20px) !important; background-color: rgba(230, 230, 230, 0.8) !important; top: 351px !important; left: -999999px !important; opacity: 0 !important; visibility: hidden !important;">
+	</div>
+</body>
+
+</html>
