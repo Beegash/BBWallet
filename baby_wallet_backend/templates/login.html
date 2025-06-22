@@ -3,6 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="csrf-token" content="{{ csrf_token }}">
 	<title>Baby Wallet - Sign In</title>
 	<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 	<script src="https://cdn.tailwindcss.com"></script>
@@ -474,6 +475,25 @@
 			console.log('Last login method:', savedLoginMethod);
 		}
 
+		// Get CSRF token function
+		function getCSRFToken() {
+			// First try to get from meta tag
+			const metaTag = document.querySelector('meta[name="csrf-token"]');
+			if (metaTag) {
+				return metaTag.getAttribute('content');
+			}
+			
+			// Fallback to cookie
+			const cookies = document.cookie.split(';');
+			for (let cookie of cookies) {
+				const [name, value] = cookie.trim().split('=');
+				if (name === 'csrftoken') {
+					return value;
+				}
+			}
+			return null;
+		}
+
 		// Form submission (prevent default for demo)
 		document.querySelector('form').addEventListener('submit', async (e) => {
 			e.preventDefault();
@@ -501,11 +521,15 @@
             `;
 
 			try {
+				// Get CSRF token
+				const csrfToken = getCSRFToken();
+				
 				// Call the login API
 				const response = await fetch('/api/login/', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
+						'X-CSRFToken': csrfToken,
 					},
 					body: JSON.stringify({ username, password })
 				});

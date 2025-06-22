@@ -1,7 +1,9 @@
 from django.shortcuts import render
 from rest_framework import viewsets, permissions
+from rest_framework import serializers
 from .models import Investment, Transaction
 from .serializers import InvestmentSerializer, TransactionSerializer
+from accounts.models import Child
 
 # Create your views here.
 
@@ -20,8 +22,19 @@ class InvestmentViewSet(viewsets.ModelViewSet):
         return self.request.user.investments.all()
 
     def perform_create(self, serializer):
-        # Automatically associate the investment with the logged-in user.
-        serializer.save(user=self.request.user)
+        # Get child ID from request data
+        child_id = self.request.data.get('child')
+        if not child_id:
+            raise serializers.ValidationError({'child': 'Child ID is required'})
+        
+        try:
+            # Verify that the child belongs to the current user
+            child = Child.objects.get(id=child_id, user=self.request.user)
+        except Child.DoesNotExist:
+            raise serializers.ValidationError({'child': 'Invalid child ID or child does not belong to you'})
+        
+        # Automatically associate the investment with the logged-in user and selected child
+        serializer.save(user=self.request.user, child=child)
 
 class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
     """

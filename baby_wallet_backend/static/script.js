@@ -36,6 +36,7 @@ async function initializeApp() {
     if (authToken) {
         AppState.authToken = authToken;
         AppState.isLoggedIn = true;
+        await fetchUserInfo();
         await fetchChildren();
     } else {
         // Redirect to login page if not logged in
@@ -137,6 +138,10 @@ function showPage(pageId) {
             // Default to list view when showing profiles page
             document.getElementById('child-list-view').classList.remove('hidden');
             document.getElementById('child-detail-view').classList.add('hidden');
+        } else if (pageId === 'investment') {
+            // Load investment history when showing investment page
+            loadInvestmentHistory();
+            targetPage.classList.add('slide-in');
         } else {
              targetPage.classList.add('slide-in');
         }
@@ -222,6 +227,7 @@ function setupInvestmentForm() {
     const recurringOptions = document.getElementById('recurring-options');
     const createContractBtn = document.getElementById('create-contract-btn');
     const contractModal = document.getElementById('contract-modal');
+    const investmentForm = document.querySelector('#investment form');
 
     investmentTypeRadios.forEach(radio => {
         radio.addEventListener('change', function() {
@@ -232,6 +238,14 @@ function setupInvestmentForm() {
             }
         });
     });
+
+    // Investment form submit handler
+    if (investmentForm) {
+        investmentForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await handleInvestmentSubmit();
+        });
+    }
 
     createContractBtn.addEventListener('click', function() {
         contractModal.classList.remove('hidden');
@@ -247,6 +261,131 @@ function setupInvestmentForm() {
     
     if (yearsSlider) {
         yearsSlider.addEventListener('input', updateInvestmentEstimate);
+    }
+
+    // Load children for dropdown
+    loadChildrenForInvestment();
+}
+
+async function handleInvestmentSubmit() {
+    const childSelect = document.getElementById('child-select');
+    const amountInput = document.getElementById('amount');
+    const investmentTypeRadios = document.querySelectorAll('input[name="investment-type"]');
+    const frequencySelect = document.getElementById('frequency');
+    
+    // Get form values
+    const childId = childSelect.value;
+    const amount = parseFloat(amountInput.value);
+    let investmentType = 'one_time';
+    let frequency = null;
+    
+    // Get selected investment type
+    investmentTypeRadios.forEach(radio => {
+        if (radio.checked) {
+            investmentType = radio.id === 'recurring' ? 'recurring' : 'one_time';
+        }
+    });
+    
+    // Get frequency if recurring
+    if (investmentType === 'recurring') {
+        frequency = frequencySelect.value.toLowerCase();
+    }
+    
+    // Validate form
+    if (!childId || !amount || amount <= 0) {
+        showNotification('Please fill in all required fields', 'error');
+        return;
+    }
+    
+    try {
+        // Show loading state
+        const submitBtn = document.getElementById('submit-investment-btn');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Creating Investment...';
+        submitBtn.disabled = true;
+        
+        // Prepare investment data
+        const investmentData = {
+            child: parseInt(childId),
+            amount: amount.toString(),
+            investment_type: investmentType,
+            start_date: new Date().toISOString().split('T')[0]
+        };
+        
+        if (frequency) {
+            investmentData.frequency = frequency;
+        }
+        
+        console.log('Sending investment data:', investmentData);
+        
+        // Submit to API
+        const response = await fetchWithAuth('/api/investments/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(investmentData)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to create investment');
+        }
+        
+        const result = await response.json();
+        
+        // Show success message
+        showNotification('Investment created successfully!', 'success');
+        
+        // Reset form
+        document.querySelector('#investment form').reset();
+        
+        // Update dashboard stats and investment history
+        await loadDashboardStats();
+        await loadInvestmentHistory();
+        await loadTransactionHistory();
+        
+        // Show contract modal for blockchain interaction
+        const contractModal = document.getElementById('contract-modal');
+        if (contractModal) {
+            contractModal.classList.remove('hidden');
+        }
+        
+    } catch (error) {
+        console.error('Investment creation failed:', error);
+        showNotification(error.message || 'Failed to create investment', 'error');
+    } finally {
+        // Reset button state
+        const submitBtn = document.getElementById('submit-investment-btn');
+        submitBtn.textContent = 'Create Investment';
+        submitBtn.disabled = false;
+    }
+}
+
+async function loadChildrenForInvestment() {
+    try {
+        const response = await fetchWithAuth('/api/children/');
+        if (!response.ok) {
+            throw new Error('Failed to fetch children');
+        }
+        
+        const children = await response.json();
+        const childSelect = document.getElementById('child-select');
+        
+        if (childSelect && children.length > 0) {
+            // Clear existing options
+            childSelect.innerHTML = '';
+            
+            // Add children as options
+            children.forEach(child => {
+                const option = document.createElement('option');
+                option.value = child.id;
+                option.textContent = `${child.name} (${child.age} years)`;
+                childSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Failed to load children for investment:', error);
     }
 }
 
@@ -527,6 +666,56 @@ window.BabyWallet = {
     createSmartContract
 };
 
+// Fetch current user information
+async function fetchUserInfo() {
+    console.log('🔍 fetchUserInfo called');
+    try {
+        const response = await fetchWithAuth('/api/users/');
+        console.log('📡 API Response status:', response.status);
+        if (response.ok) {
+            const data = await response.json();
+            console.log('📊 API Data:', data);
+            if (data.results && data.results.length > 0) {
+                const user = data.results[0]; // Get first user (current user)
+                console.log('👤 User found:', user);
+                AppState.currentUser = user;
+                updateUserUI(user);
+            } else {
+                console.log('❌ No users in results');
+            }
+        } else {
+            console.error('❌ Failed to fetch user info, status:', response.status);
+        }
+    } catch (error) {
+        console.error('💥 Error fetching user info:', error);
+    }
+}
+
+// Update UI with user information
+function updateUserUI(user) {
+    console.log('🔄 updateUserUI called with:', user);
+    const displayName = user.first_name || user.username;
+    console.log('📝 Display name will be:', displayName);
+    
+    // Update header username
+    const headerUsername = document.getElementById('header-username');
+    if (headerUsername) {
+        console.log('✅ Updating header username');
+        headerUsername.textContent = displayName;
+    } else {
+        console.log('❌ Header username element not found');
+    }
+    
+    // Update welcome message
+    const welcomeUsername = document.getElementById('welcome-username');
+    if (welcomeUsername) {
+        console.log('✅ Updating welcome username');
+        welcomeUsername.textContent = displayName;
+    } else {
+        console.log('❌ Welcome username element not found');
+    }
+}
+
 // Fetch and render children data
 async function fetchChildren() {
     try {
@@ -537,6 +726,7 @@ async function fetchChildren() {
         const data = await response.json();
         renderChildren(data);
         await loadDashboardStats();
+        await loadTransactionHistory();
     } catch (error) {
         console.error('Failed to fetch children:', error);
         showNotification('Could not load child profiles.', 'error');
@@ -865,5 +1055,227 @@ function setupProfileNavigation() {
             document.getElementById('child-detail-view').classList.add('hidden');
             document.getElementById('child-list-view').classList.remove('hidden');
         });
+    }
+}
+
+// Load transaction chart data
+async function loadTransactionChart(period = '6m') {
+    try {
+        const response = await fetchWithAuth(`/api/transaction-stats/?period=${period}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch transaction stats');
+        }
+        const data = await response.json();
+        updateChart(data.chart_data);
+    } catch (error) {
+        console.error('Failed to load transaction chart:', error);
+    }
+}
+
+// Load and display transaction history
+async function loadTransactionHistory() {
+    try {
+        const response = await fetchWithAuth('/api/transactions/');
+        if (!response.ok) {
+            throw new Error('Failed to fetch transactions');
+        }
+        
+        const transactions = await response.json();
+        displayTransactionHistory(transactions.results || transactions);
+    } catch (error) {
+        console.error('Failed to load transaction history:', error);
+        showNotification('Failed to load transaction history', 'error');
+    }
+}
+
+function displayTransactionHistory(transactions) {
+    const transactionTableBody = document.querySelector('#dashboard tbody');
+    
+    if (!transactionTableBody) return;
+    
+    // Clear existing rows
+    transactionTableBody.innerHTML = '';
+    
+    if (!transactions || transactions.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td colspan="5" class="px-6 py-4 text-center text-text-secondary">
+                No transactions found
+            </td>
+        `;
+        transactionTableBody.appendChild(row);
+        return;
+    }
+    
+    // Display latest 10 transactions
+    transactions.slice(0, 10).forEach(transaction => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-bg-secondary';
+        
+        const statusColor = getStatusColor(transaction.status);
+        const date = new Date(transaction.created_at).toLocaleDateString();
+        
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
+                ${date}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
+                ${transaction.token || 'USDC'}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
+                ${transaction.transaction_type === 'investment' ? '+' : ''}$${parseFloat(transaction.amount).toFixed(2)}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColor}">
+                    ${transaction.status}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
+                ${transaction.child_name || transaction.child?.name || 'N/A'}
+            </td>
+        `;
+        
+        transactionTableBody.appendChild(row);
+    });
+}
+
+function getStatusColor(status) {
+    switch (status) {
+        case 'completed':
+            return 'bg-green-100 text-green-800';
+        case 'pending':
+            return 'bg-yellow-100 text-yellow-800';
+        case 'failed':
+            return 'bg-red-100 text-red-800';
+        case 'cancelled':
+            return 'bg-gray-100 text-gray-800';
+        default:
+            return 'bg-gray-100 text-gray-800';
+    }
+}
+
+// Load investment history for a specific child
+async function loadChildInvestments(childId) {
+    try {
+        const response = await fetchWithAuth(`/api/investments/?child=${childId}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch child investments');
+        }
+        
+        const investments = await response.json();
+        return investments.results || investments;
+    } catch (error) {
+        console.error('Failed to load child investments:', error);
+        return [];
+    }
+}
+
+// Load transaction history for a specific child
+async function loadChildTransactions(childId) {
+    try {
+        const response = await fetchWithAuth(`/api/transactions/?child=${childId}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch child transactions');
+        }
+        
+        const transactions = await response.json();
+        return transactions.results || transactions;
+    } catch (error) {
+        console.error('Failed to load child transactions:', error);
+        return [];
+    }
+}
+
+// Load and display all user investments
+async function loadInvestmentHistory() {
+    try {
+        const response = await fetchWithAuth('/api/investments/');
+        if (!response.ok) {
+            throw new Error('Failed to fetch investments');
+        }
+        
+        const investments = await response.json();
+        displayInvestmentHistory(investments.results || investments);
+    } catch (error) {
+        console.error('Failed to load investment history:', error);
+        displayInvestmentHistory([]);
+    }
+}
+
+function displayInvestmentHistory(investments) {
+    const container = document.getElementById('investment-history-container');
+    
+    if (!container) return;
+    
+    if (!investments || investments.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <svg class="mx-auto h-12 w-12 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-text-primary">No investments yet</h3>
+                <p class="mt-1 text-sm text-text-secondary">Create your first investment using the form above.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const investmentCards = investments.map(investment => {
+        const statusColor = getInvestmentStatusColor(investment.status);
+        const date = new Date(investment.created_at).toLocaleDateString();
+        const frequencyText = investment.frequency ? ` (${investment.frequency})` : '';
+        
+        return `
+            <div class="border border-border-color rounded-lg p-4 hover:bg-bg-secondary transition-colors">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <h4 class="font-medium text-text-primary">${investment.child_name}</h4>
+                        <p class="text-sm text-text-secondary">${investment.investment_type}${frequencyText}</p>
+                    </div>
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">
+                        ${investment.status}
+                    </span>
+                </div>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <span class="text-text-secondary">Amount:</span>
+                        <span class="font-medium text-text-primary ml-1">$${parseFloat(investment.amount).toFixed(2)}</span>
+                    </div>
+                    <div>
+                        <span class="text-text-secondary">Contributed:</span>
+                        <span class="font-medium text-text-primary ml-1">$${parseFloat(investment.total_contributed).toFixed(2)}</span>
+                    </div>
+                    <div>
+                        <span class="text-text-secondary">Created:</span>
+                        <span class="font-medium text-text-primary ml-1">${date}</span>
+                    </div>
+                    <div>
+                        <span class="text-text-secondary">Transactions:</span>
+                        <span class="font-medium text-text-primary ml-1">${investment.transactions ? investment.transactions.length : 0}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = `
+        <div class="space-y-4">
+            ${investmentCards}
+        </div>
+    `;
+}
+
+function getInvestmentStatusColor(status) {
+    switch (status) {
+        case 'active':
+            return 'bg-green-100 text-green-800';
+        case 'paused':
+            return 'bg-yellow-100 text-yellow-800';
+        case 'completed':
+            return 'bg-blue-100 text-blue-800';
+        case 'cancelled':
+            return 'bg-red-100 text-red-800';
+        default:
+            return 'bg-gray-100 text-gray-800';
     }
 } 
