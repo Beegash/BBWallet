@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@stellar/freighter-api": "^4.1.0",
+    "soroban-client": "^1.0.1"
+  }
+}
