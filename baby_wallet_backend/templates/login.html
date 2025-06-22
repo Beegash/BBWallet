@@ -514,8 +514,8 @@
 					const data = await response.json();
 					// Store the token
 					localStorage.setItem('authToken', data.token);
-					// Save login method preference
-					localStorage.setItem('loginMethod', 'traditional');
+			// Save login method preference
+			localStorage.setItem('loginMethod', 'traditional');
 					// Redirect to main page
 					window.location.href = '/';
 				} else {

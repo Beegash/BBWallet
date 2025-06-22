@@ -28,6 +28,8 @@ async function initializeApp() {
     setupContractCreation();
     setupLogout();
     loadTheme();
+    setupAddChild();
+    setupProfileNavigation();
     
     // Check if user is already logged in
     const authToken = localStorage.getItem('authToken');
@@ -100,13 +102,18 @@ function loadTheme() {
 
 // Navigation
 function setupNavigation() {
-    const navLinks = document.querySelectorAll('nav a[href^="#"]');
+    const navLinks = document.querySelectorAll('nav a');
     
     navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
             const targetId = this.getAttribute('href').substring(1);
-            showPage(targetId);
+            
+            if (targetId === 'profiles') {
+                showProfilesPage();
+            } else {
+                showPage(targetId);
+            }
             updateActiveNavLink(this);
         });
     });
@@ -126,7 +133,13 @@ function showPage(pageId) {
     const targetPage = document.getElementById(pageId);
     if (targetPage) {
         targetPage.classList.remove('hidden');
-        targetPage.classList.add('slide-in');
+        if (pageId === 'profiles') {
+            // Default to list view when showing profiles page
+            document.getElementById('child-list-view').classList.remove('hidden');
+            document.getElementById('child-detail-view').classList.add('hidden');
+        } else {
+             targetPage.classList.add('slide-in');
+        }
     }
 }
 
@@ -175,6 +188,9 @@ function setupModals() {
         }
         if (e.target === contractModal) {
             contractModal.classList.add('hidden');
+        }
+        if (e.target === document.getElementById('add-child-modal')) {
+            document.getElementById('add-child-modal').classList.add('hidden');
         }
     });
 }
@@ -514,16 +530,64 @@ window.BabyWallet = {
 // Fetch and render children data
 async function fetchChildren() {
     try {
-        const response = await fetchWithAuth('/api/children/'); // Use authenticated fetch
+        const response = await fetchWithAuth('/api/children/');
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
         const data = await response.json();
-        renderChildren(data.results);
+        renderChildren(data);
+        await loadDashboardStats();
     } catch (error) {
         console.error('Failed to fetch children:', error);
         showNotification('Could not load child profiles.', 'error');
     }
+}
+
+// Load dashboard statistics
+async function loadDashboardStats() {
+    try {
+        const response = await fetchWithAuth('/api/dashboard-stats/');
+        if (!response.ok) {
+            throw new Error('Failed to fetch dashboard stats');
+        }
+        const data = await response.json();
+        updateDashboardUI(data);
+    } catch (error) {
+        console.error('Failed to load dashboard stats:', error);
+        showNotification('Could not load dashboard statistics.', 'error');
+    }
+}
+
+// Update dashboard UI with real data
+function updateDashboardUI(stats) {
+    // Update total savings
+    const totalSavingsElement = document.querySelector('[data-stat="total-savings"]');
+    if (totalSavingsElement) {
+        totalSavingsElement.textContent = formatCurrency(stats.total_savings);
+    }
+    
+    // Update percentage change
+    const percentageChangeElement = document.querySelector('[data-stat="percentage-change"]');
+    if (percentageChangeElement) {
+        const percentageValue = stats.percentage_change;
+        const isPositive = percentageValue >= 0;
+        const percentageText = `${isPositive ? '+' : ''}${percentageValue.toFixed(1)}%`;
+        
+        // Update the text content of the percentage span
+        const textNode = percentageChangeElement.childNodes[percentageChangeElement.childNodes.length - 1];
+        if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+            textNode.textContent = percentageText;
+        }
+        
+        // Update color based on positive/negative
+        if (isPositive) {
+            percentageChangeElement.className = 'ml-2 text-sm font-medium text-green-500 flex items-center';
+        } else {
+            percentageChangeElement.className = 'ml-2 text-sm font-medium text-red-500 flex items-center';
+        }
+    }
+    
+    console.log('Dashboard stats loaded:', stats);
 }
 
 function renderChildren(children) {
@@ -565,12 +629,63 @@ function renderChildren(children) {
                     <p class="text-sm text-text-secondary">Current Balance</p>
                     <p class="text-lg font-bold text-text-primary">${formatCurrency(child.current_balance)}</p>
                 </div>
-                <button class="px-3 py-1 bg-accent-primary bg-opacity-10 text-accent-primary rounded-lg text-sm">View Details</button>
+                <button data-child-id="${child.id}" class="view-details-btn px-3 py-1 bg-accent-primary text-white rounded-lg text-sm">View Details</button>
             </div>
         `;
         // Insert the new card before the 'Add Child' card
         container.insertBefore(card, addChildCard);
     });
+
+    document.addEventListener('click', function(e) {
+        const viewDetailsButton = e.target.closest('.view-details-btn');
+        if (viewDetailsButton) {
+            const childId = viewDetailsButton.dataset.childId;
+            if (childId) {
+                fetchAndShowChildProfile(childId);
+            }
+        }
+    });
+}
+
+async function fetchAndShowChildProfile(childId) {
+    try {
+        const response = await fetchWithAuth(`/api/children/${childId}/`);
+        if (!response.ok) {
+            throw new Error('Could not fetch child details.');
+        }
+        const child = await response.json();
+
+        // Populate profile page with data
+        document.getElementById('profile-name').textContent = child.name;
+        document.getElementById('profile-age').textContent = `Age: ${child.age} years`;
+        document.getElementById('profile-progress-percent').textContent = `${Math.round(child.progress_percentage)}%`;
+        document.getElementById('profile-progress-bar').style.width = `${child.progress_percentage}%`;
+        document.getElementById('profile-balance').textContent = formatCurrency(child.current_balance);
+        document.getElementById('profile-target').textContent = formatCurrency(child.target_amount);
+        document.getElementById('profile-projected-value').textContent = formatCurrency(child.projected_value_at_18);
+        document.getElementById('profile-years-left-text').textContent = child.years_until_unlock;
+
+        // Update avatar color
+        const avatar = document.getElementById('profile-avatar');
+        avatar.className = `h-20 w-20 rounded-full flex items-center justify-center bg-${child.color_theme}-100`;
+        avatar.querySelector('svg').className = `h-12 w-12 text-${child.color_theme}-500`;
+
+        // This is static for now, can be dynamic later
+        document.getElementById('profile-nft-name').textContent = `${child.name}'s Future Fund`;
+
+        // Show the profile page and the detail view
+        showPage('profiles');
+        document.getElementById('child-list-view').classList.add('hidden');
+        document.getElementById('child-detail-view').classList.remove('hidden');
+        
+        // Update the active nav link
+        const profileLink = document.querySelector('a[href="#profiles"]');
+        updateActiveNavLink(profileLink);
+
+    } catch (error) {
+        console.error('Error fetching child profile:', error);
+        showNotification(error.message, 'error');
+    }
 }
 
 // --- Authentication ---
@@ -632,4 +747,123 @@ function logout() {
     localStorage.removeItem('authToken');
     showNotification('Logged out successfully!', 'success');
     window.location.href = '/login/';
+}
+
+// Add Child Functionality
+function setupAddChild() {
+    const addChildCard = document.getElementById('add-child-card');
+    const addChildModal = document.getElementById('add-child-modal');
+    const closeAddChildModal = document.getElementById('close-add-child-modal');
+    const addChildForm = document.getElementById('add-child-form');
+
+    if (addChildCard) {
+        addChildCard.addEventListener('click', () => {
+            addChildModal.classList.remove('hidden');
+        });
+    }
+
+    if (closeAddChildModal) {
+        closeAddChildModal.addEventListener('click', () => {
+            addChildModal.classList.add('hidden');
+        });
+    }
+
+    if (addChildForm) {
+        addChildForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitButton = addChildForm.querySelector('button[type="submit"]');
+            const originalButtonText = submitButton.textContent;
+            submitButton.textContent = 'Creating...';
+            submitButton.disabled = true;
+
+            const formData = new FormData(addChildForm);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetchWithAuth('/api/children/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(JSON.stringify(errorData));
+                }
+
+                showNotification('Child profile created successfully!', 'success');
+                addChildModal.classList.add('hidden');
+                addChildForm.reset();
+                await fetchChildren(); // Refresh the children list
+
+            } catch (error) {
+                console.error('Failed to create child:', error);
+                showNotification(`Error: ${error.message}`, 'error');
+            } finally {
+                submitButton.textContent = originalButtonText;
+                submitButton.disabled = false;
+            }
+        });
+    }
+}
+
+async function showProfilesPage() {
+    showPage('profiles');
+    try {
+        const response = await fetchWithAuth('/api/children/');
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const children = await response.json();
+        renderProfileList(children);
+    } catch (error) {
+        console.error('Failed to fetch children for profiles page:', error);
+        showNotification('Could not load child profiles.', 'error');
+    }
+}
+
+function renderProfileList(children) {
+    const container = document.getElementById('child-profile-list-container');
+    if (!container) return;
+    container.innerHTML = ''; // Clear previous list
+
+    children.forEach(child => {
+        const card = document.createElement('div');
+        card.className = 'bg-card-bg shadow-lg rounded-2xl p-5 theme-transition border border-border-color text-center';
+        card.innerHTML = `
+            <div class="h-20 w-20 rounded-full bg-${child.color_theme}-100 flex items-center justify-center mx-auto mb-4">
+                <svg class="h-12 w-12 text-${child.color_theme}-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-medium text-text-primary">${child.name}</h3>
+            <p class="text-sm text-text-secondary mb-4">Age: ${child.age}</p>
+            <button data-child-id="${child.id}" class="view-profile-btn w-full px-3 py-2 bg-accent-primary text-white rounded-lg text-sm">View Profile</button>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function setupProfileNavigation() {
+    // Listener for all "View Profile" or "View Details" buttons
+    document.addEventListener('click', function(e) {
+        const viewButton = e.target.closest('.view-details-btn, .view-profile-btn');
+        if (viewButton) {
+            const childId = viewButton.dataset.childId;
+            if (childId) {
+                fetchAndShowChildProfile(childId);
+            }
+        }
+    });
+
+    // Listener for the "Back to All Profiles" button
+    const backToProfilesBtn = document.getElementById('back-to-profiles-btn');
+    if(backToProfilesBtn) {
+        backToProfilesBtn.addEventListener('click', () => {
+            document.getElementById('child-detail-view').classList.add('hidden');
+            document.getElementById('child-list-view').classList.remove('hidden');
+        });
+    }
 } 

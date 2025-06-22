@@ -55,7 +55,9 @@ class LoginView(APIView):
         )
 
         if user:
-            token, created = Token.objects.get_or_create(user=user)
+            # Delete old token and create a new one
+            Token.objects.filter(user=user).delete()
+            token = Token.objects.create(user=user)
             return Response({'token': token.key})
         
         return Response(
@@ -66,3 +68,45 @@ class LoginView(APIView):
 
 class LoginTemplateView(TemplateView):
     template_name = "login.html"
+
+
+class DashboardStatsView(APIView):
+    """
+    Provides statistics for the user's dashboard.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        from decimal import Decimal
+        from investments.models import Investment
+        
+        user = request.user
+        children = user.children.all()
+        
+        # Calculate total savings (wallet balances + investment values)
+        total_wallet_balances = sum(child.current_balance for child in children)
+        total_investment_values = sum(
+            investment.total_contributed 
+            for investment in Investment.objects.filter(user=user, status='active')
+        )
+        
+        total_savings = total_wallet_balances + total_investment_values
+        child_count = children.count()
+        
+        # TODO: Implement percentage change calculation
+        # For now, we'll use 0% as placeholder
+        # Future implementation will use daily snapshots for accurate calculation
+        percentage_change = Decimal('0.00')
+        
+        # You can add more stats here, e.g., total investments, growth percentage, etc.
+        
+        stats = {
+            'total_savings': float(total_savings),  # Convert to float for JSON serialization
+            'total_wallet_balances': float(total_wallet_balances),
+            'total_investment_values': float(total_investment_values),
+            'percentage_change': float(percentage_change),
+            'child_count': child_count,
+            'active_investments': user.investments.filter(status='active').count(),
+        }
+        
+        return Response(stats)

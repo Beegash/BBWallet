@@ -273,13 +273,14 @@ function setupCharts() {
             this.classList.remove('chart-btn-inactive');
             this.classList.add('chart-btn-active');
             
-            // Here you could also update the chart data based on the selected period
-            console.log('Chart period changed to:', this.textContent);
+            // Load new chart data based on selected period
+            const period = this.textContent.toLowerCase();
+            loadTransactionChart(period);
         });
     });
 
     // Initialize Chart.js
-    const chart = new Chart(ctx, {
+    window.portfolioChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
@@ -519,10 +520,82 @@ async function fetchChildren() {
             throw new Error('Network response was not ok');
         }
         const data = await response.json();
-        renderChildren(data.results);
+        renderChildren(data.results || data);
+        await loadDashboardStats();
     } catch (error) {
         console.error('Failed to fetch children:', error);
         showNotification('Could not load child profiles.', 'error');
+    }
+}
+
+// Load dashboard statistics
+async function loadDashboardStats() {
+    try {
+        const response = await fetchWithAuth('/api/dashboard-stats/');
+        if (!response.ok) {
+            throw new Error('Failed to fetch dashboard stats');
+        }
+        const data = await response.json();
+        updateDashboardUI(data);
+        await loadTransactionChart();
+    } catch (error) {
+        console.error('Failed to load dashboard stats:', error);
+        showNotification('Could not load dashboard statistics.', 'error');
+    }
+}
+
+// Update dashboard UI with real data
+function updateDashboardUI(stats) {
+    // Update main stats cards
+    const totalSavingsElement = document.querySelector('[data-stat="total-savings"]');
+    const totalChildrenElement = document.querySelector('[data-stat="total-children"]');
+    const totalInvestmentsElement = document.querySelector('[data-stat="total-investments"]');
+    const monthlyGrowthElement = document.querySelector('[data-stat="monthly-growth"]');
+    const activeContractsElement = document.querySelector('[data-stat="active-contracts"]');
+
+    if (totalSavingsElement) {
+        totalSavingsElement.textContent = formatCurrency(stats.total_savings);
+    }
+    if (totalChildrenElement) {
+        totalChildrenElement.textContent = stats.total_children;
+    }
+    if (totalInvestmentsElement) {
+        totalInvestmentsElement.textContent = stats.total_investments;
+    }
+    if (monthlyGrowthElement) {
+        const growthText = stats.monthly_growth > 0 ? `+${formatCurrency(stats.monthly_growth)}` : formatCurrency(stats.monthly_growth);
+        monthlyGrowthElement.textContent = growthText;
+    }
+    if (activeContractsElement) {
+        activeContractsElement.textContent = stats.active_contracts;
+    }
+
+    console.log('Dashboard stats loaded:', stats);
+}
+
+// Load transaction chart data
+async function loadTransactionChart(period = '6m') {
+    try {
+        const response = await fetchWithAuth(`/api/transaction-stats/?period=${period}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch transaction stats');
+        }
+        const data = await response.json();
+        updateChart(data.chart_data);
+    } catch (error) {
+        console.error('Failed to load transaction chart:', error);
+    }
+}
+
+// Update chart with real data
+function updateChart(chartData) {
+    if (window.portfolioChart && chartData && chartData.length > 0) {
+        const labels = chartData.map(item => item.period);
+        const values = chartData.map(item => item.total);
+        
+        window.portfolioChart.data.labels = labels;
+        window.portfolioChart.data.datasets[0].data = values;
+        window.portfolioChart.update();
     }
 }
 
